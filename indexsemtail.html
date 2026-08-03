@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hora da Saída - Lembrete de Ponto</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      }
+      body {
+        background-color: #f4f6f9;
+        display: flex;
+        justify-content: center;
+        padding: 20px;
+        margin: 0;
+      }
+      .card {
+        background: white;
+        width: 100%;
+        max-width: 400px;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      }
+      h2 {
+        text-align: center;
+        color: #1a1a1a;
+        margin-top: 0;
+      }
+
+      .btn-now {
+        background: #2563eb;
+        color: white;
+        border: none;
+        width: 100%;
+        padding: 16px;
+        border-radius: 12px;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: 0.2s;
+      }
+      .btn-now:active {
+        transform: scale(0.98);
+        background: #1d4ed8;
+      }
+
+      .divider {
+        text-align: center;
+        color: #888;
+        margin: 20px 0;
+        font-size: 14px;
+        position: relative;
+      }
+      .divider::before,
+      .divider::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        width: 40%;
+        height: 1px;
+        background: #ddd;
+      }
+      .divider::before {
+        left: 0;
+      }
+      .divider::after {
+        right: 0;
+      }
+
+      .form-group {
+        margin-bottom: 16px;
+      }
+      label {
+        display: block;
+        font-size: 14px;
+        font-weight: 600;
+        color: #444;
+        margin-bottom: 6px;
+      }
+      input,
+      select {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        font-size: 16px;
+        background: #fff;
+      }
+
+      .result-box {
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        border-radius: 12px;
+        padding: 16px;
+        text-align: center;
+        margin-top: 20px;
+        display: none;
+      }
+      .result-time {
+        font-size: 32px;
+        font-weight: bold;
+        color: #1e40af;
+        margin: 8px 0;
+      }
+      .subtext {
+        font-size: 12px;
+        color: #64748b;
+      }
+
+      .btn-alert {
+        background: #059669;
+        color: white;
+        border: none;
+        width: 100%;
+        padding: 12px;
+        border-radius: 8px;
+        font-weight: bold;
+        margin-top: 12px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h2>⏰ Hora de Saída</h2>
+
+      <!-- Ação rápida: Entrada agora -->
+      <button class="btn-now" onclick="marcarEntradaAgora()">
+        📍 Bati a entrada AGORA
+      </button>
+
+      <div class="divider">ou ajuste manualmente</div>
+
+      <!-- Seleção de Turno -->
+      <div class="form-group">
+        <label for="turno">Turno / Carga Horária:</label>
+        <select id="turno" onchange="calcularSaida()">
+          <option value="8.0">Seg a Sex (8h + 1h almoço)</option>
+          <option value="8.8">
+            Seg a Sex com compensação de Sábado (8h48 + 1h almoço)
+          </option>
+          <option value="6.0">Turno de 6 horas (Sem almoço)</option>
+        </select>
+      </div>
+
+      <!-- Horário de Entrada -->
+      <div class="form-group">
+        <label for="horaEntrada">Horário de Entrada:</label>
+        <input type="time" id="horaEntrada" onchange="calcularSaida()" />
+      </div>
+
+      <!-- Intervalo de Almoço (se aplicável) -->
+      <div class="form-group" id="grupoAlmoco">
+        <label for="duracaoAlmoco">Tempo de Almoço (minutos):</label>
+        <input
+          type="number"
+          id="duracaoAlmoco"
+          value="60"
+          onchange="calcularSaida()"
+        />
+      </div>
+
+      <!-- Resultado do Horário Limite -->
+      <div id="resultadoBox" class="result-box">
+        <div>Horário exato para bater o ponto:</div>
+        <div id="horaSaida" class="result-time">--:--</div>
+        <div class="subtext">
+          Aviso: Tolerância máxima de 5 minutos segundo a CLT.
+        </div>
+        <button class="btn-alert" onclick="agendarAlerta()">
+          🔔 Notificar 10 min antes
+        </button>
+      </div>
+    </div>
+
+    <script>
+      // Preenche o input de hora com o horário atual ao abrir
+      function obterHoraAtual() {
+        const agora = new Date();
+        const hh = String(agora.getHours()).padStart(2, "0");
+        const mm = String(agora.getMinutes()).padStart(2, "0");
+        return `${hh}:${mm}`;
+      }
+
+      function marcarEntradaAgora() {
+        document.getElementById("horaEntrada").value = obterHoraAtual();
+        calcularSaida();
+      }
+
+      function calcularSaida() {
+        const horaEntradaVal = document.getElementById("horaEntrada").value;
+        if (!horaEntradaVal) return;
+
+        const turnoHoras = parseFloat(document.getElementById("turno").value);
+        const grupoAlmoco = document.getElementById("grupoAlmoco");
+
+        // Oculta almoço para turnos de 6h
+        let minutosAlmoco = 0;
+        if (turnoHoras === 6.0) {
+          grupoAlmoco.style.display = "none";
+        } else {
+          grupoAlmoco.style.display = "block";
+          minutosAlmoco =
+            parseInt(document.getElementById("duracaoAlmoco").value) || 0;
+        }
+
+        // Converter entrada para minutos
+        const [hh, mm] = horaEntradaVal.split(":").map(Number);
+        let totalMinutosEntrada = hh * 60 + mm;
+
+        // Adicionar carga de trabalho em minutos + tempo de almoço
+        const minutosTrabalho = Math.round(turnoHoras * 60);
+        let totalMinutosSaida =
+          totalMinutosEntrada + minutosTrabalho + minutosAlmoco;
+
+        // Tratar virada de dia (passar da meia-noite)
+        totalMinutosSaida = totalMinutosSaida % (24 * 60);
+
+        // Converter de volta para HH:MM
+        const hSaida = String(Math.floor(totalMinutosSaida / 60)).padStart(
+          2,
+          "0",
+        );
+        const mSaida = String(totalMinutosSaida % 60).padStart(2, "0");
+
+        // Exibir resultado
+        document.getElementById("horaSaida").innerText = `${hSaida}:${mSaida}`;
+        document.getElementById("resultadoBox").style.display = "block";
+      }
+
+      function agendarAlerta() {
+        if ("Notification" in window) {
+          Notification.requestPermission().then((permission) => {
+            if (permission === "granted") {
+              alert(
+                "Alerta ativado! Você receberá uma notificação antes do seu horário de saída.",
+              );
+            } else {
+              alert(
+                "Por favor, permita as notificações no seu navegador para receber alertas.",
+              );
+            }
+          });
+        } else {
+          alert("Seu navegador não suporta notificações de sistema.");
+        }
+      }
+    </script>
+  </body>
+</html>
