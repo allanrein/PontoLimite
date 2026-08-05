@@ -8,7 +8,7 @@ O **PontoLimite** é uma aplicação web (_PWA_) desenvolvida para resolver uma 
 
 Com um design focado em **UX de zero fricção**, a ferramenta permite registrar o ponto de entrada com apenas 1 clique e calcula instantaneamente a hora exata de término da jornada e o limite máximo permitido pela legislação trabalhista (CLT).
 
-📱 **Acesse o App em Produção:** [https://allanrein.github.io/pontolimite/](https://allanrein.github.io/pontolimite/)
+📱 **Acesse o App em Produção:** [https://allanrein.github.io/PontoLimite/](https://allanrein.github.io/PontoLimite/)
 
 ---
 
@@ -43,5 +43,5 @@ Como a aplicação é 100% _Client-Side_ (rodada no próprio navegador), não é
 
 1. **Clone este repositório:**
    ```bash
-   git clone [https://github.com/seu-usuario/pontolimite.git](https://github.com/seu-usuario/pontolimite.git)
+   git clone [https://github.com/allanrein/PontoLimite.git](https://github.com/allanrein/PontoLimite.git)
    ```
